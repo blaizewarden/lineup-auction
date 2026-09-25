@@ -141,7 +141,7 @@ function renderLobby(s) {
     <section class="panel" data-region data-keep id="settingsBox"></section>
     <section class="panel" data-region id="peopleBox"></section>
     <section class="panel" data-region id="inviteBox"></section>
-    <section class="panel" data-region data-keep id="profilesBox"></section>`);
+    <section class="panel" data-region id="profilesBox"></section>`);
 
   const st = s.settings;
   if (isHost()) {
@@ -211,7 +211,7 @@ function paintProfiles(s) {
         </li>`).join('')}</ul>
     </details>`);
   box.querySelectorAll('[data-delete]').forEach(b => {
-    b.onclick = () => { const n = b.dataset.delete; if (confirm(`Delete ${n}? This removes the profile and all their stats. It can't be undone.`)) emit('deleteProfile', n); };
+    b.onclick = () => { const n = b.dataset.delete; b.blur(); if (confirm(`Delete ${n}? This removes the profile and all their stats. It can't be undone.`)) emit('deleteProfile', n); };
   });
   box.querySelectorAll('[data-merge-from]').forEach(sel => {
     sel.onchange = () => {
