@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: lineup-auction
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NO_OPEN
+        value: "1"

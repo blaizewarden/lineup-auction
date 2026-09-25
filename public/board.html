@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lineup Auction board</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="board">
+  <header class="bar">
+    <div class="brand">Lineup Auction<small id="catline"></small></div>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="mute" type="button"></button>
+  </header>
+  <div class="board-grid">
+    <section id="stage"></section>
+    <aside id="side"></aside>
+  </div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/common.js"></script>
+  <script src="/board.js"></script>
+</body>
+</html>
