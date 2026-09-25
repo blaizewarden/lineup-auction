@@ -175,6 +175,8 @@ function startGame() {
   game.meta = { name: cat.name, goal: cat.goal, about: cat.about, style: cat.style };
   game.id = Date.now();
   game.endedEarly = false;
+  game.bidCounts = {}; // playerId -> bids placed
+  game.outbids = {};   // "byId>overId" -> times
   game.pool = [...cat.items];
   game.details = cat.details;
   game.returnedAt = {};
@@ -332,18 +334,23 @@ function finishResults(voted) {
   game.results = { voted: voted && totalVotes > 0, tally, winners, totalVotes };
   game.phase = 'results';
   // games ended early with the button don't count
+  const nameOf = id => (playerById(id) || judgeById(id) || {}).name || '?';
   if (!game.endedEarly) store.recordGame({
     id: game.id,
     at: new Date().toISOString(),
     category: game.meta.name,
+    budget: game.settings.budget,
     voted: game.results.voted,
     players: game.players.map(p => ({
       name: p.name,
       votes: tally[p.id] || 0,
       won: winners.includes(p.id),
       spent: game.settings.budget - p.money,
-      roster: p.roster.map(r => r.item)
-    }))
+      bids: game.bidCounts[p.id] || 0,
+      roster: p.roster.map(r => ({ item: r.item, price: r.price, filled: !!r.filled }))
+    })),
+    votes: Object.entries(game.votes).map(([from, to]) => ({ from: nameOf(from), to: nameOf(to) })),
+    outbids: Object.entries(game.outbids).map(([k, n]) => { const [by, over] = k.split('>'); return { by: nameOf(by), over: nameOf(over), n }; })
   });
 }
 
@@ -526,6 +533,8 @@ io.on('connection', socket => {
     if (amount > cap) {
       return fail(`Your max is $${cap}. You need to keep $${game.settings.minBid} for each empty slot.`);
     }
+    game.bidCounts[p.id] = (game.bidCounts[p.id] || 0) + 1;
+    if (a.highBidderId) game.outbids[`${p.id}>${a.highBidderId}`] = (game.outbids[`${p.id}>${a.highBidderId}`] || 0) + 1;
     a.highBid = amount;
     a.highBidderId = p.id;
     a.bids += 1;

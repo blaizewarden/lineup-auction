@@ -109,44 +109,112 @@ const MIN_GAMES = 3;
 function stats() {
   const people = {};
   const pairs = {};
-  const person = name => people[key(name)] || (people[key(name)] = { name, played: 0, voteGames: 0, wins: 0, votes: 0 });
+  const person = name => people[key(name)] || (people[key(name)] = {
+    name, played: 0, voteGames: 0, wins: 0, votes: 0, spent: 0, left: 0, bids: 0,
+    streak: 0, bestStreak: 0, cats: {}, picks: {}, votesCast: 0, kingVotes: 0
+  });
   for (const name of data.profiles) person(name);
+  const items = {};    // item -> { count, total }
+  const signings = []; // every paid pick
+  const outbids = {};  // "by|over" -> n
+  const h2h = {};      // "a|b" (sorted) -> { games, a wins, b wins }
 
-  for (const g of data.games) {
+  const games = [...data.games].sort((a, b) => a.at.localeCompare(b.at));
+  for (const g of games) {
+    const budget = g.budget || 100;
     for (const p of g.players) {
       const s = person(p.name);
       s.played += 1;
-      if (g.voted) { s.voteGames += 1; s.votes += p.votes; if (p.won) s.wins += 1; }
+      s.spent += p.spent || 0;
+      s.left += budget - (p.spent || 0);
+      s.bids += p.bids || 0;
+      for (const r of p.roster || []) {
+        const pick = typeof r === 'string' ? { item: r, price: 0, filled: true } : r;
+        if (pick.filled || pick.item === 'Empty slot') continue;
+        s.picks[pick.item] = (s.picks[pick.item] || 0) + 1;
+        const it = items[pick.item] || (items[pick.item] = { item: pick.item, count: 0, total: 0 });
+        it.count += 1; it.total += pick.price;
+        signings.push({ name: p.name, item: pick.item, price: pick.price, category: g.category });
+      }
+      if (g.voted) {
+        s.voteGames += 1;
+        s.votes += p.votes;
+        const c = s.cats[g.category] || (s.cats[g.category] = { games: 0, wins: 0 });
+        c.games += 1;
+        if (p.won) { s.wins += 1; c.wins += 1; s.streak += 1; s.bestStreak = Math.max(s.bestStreak, s.streak); }
+        else s.streak = 0;
+      }
     }
     const names = [...new Set(g.players.map(p => p.name))].sort();
+    const won = new Set(g.players.filter(p => p.won).map(p => p.name));
     for (let i = 0; i < names.length; i++) {
       for (let j = i + 1; j < names.length; j++) {
         const k = `${names[i]}|${names[j]}`;
         pairs[k] = (pairs[k] || 0) + 1;
+        if (g.voted && (won.has(names[i]) || won.has(names[j]))) {
+          const h = h2h[k] || (h2h[k] = { a: names[i], b: names[j], aWins: 0, bWins: 0 });
+          if (won.has(names[i])) h.aWins += 1;
+          if (won.has(names[j])) h.bWins += 1;
+        }
       }
     }
+    for (const v of g.votes || []) {
+      const s = person(v.from);
+      s.votesCast += 1;
+      if (won.has(v.to)) s.kingVotes += 1;
+    }
+    for (const o of g.outbids || []) outbids[`${o.by}|${o.over}`] = (outbids[`${o.by}|${o.over}`] || 0) + o.n;
   }
 
-  const all = Object.values(people).map(s => ({
-    ...s,
-    winPct: s.voteGames ? Math.round((s.wins / s.voteGames) * 100) : null,
-    votesPerGame: s.voteGames ? Math.round((s.votes / s.voteGames) * 100) / 100 : null
-  }));
+  const round = (n, d = 1) => Math.round(n * 10 ** d) / 10 ** d;
+  const all = Object.values(people).map(s => {
+    const cats = Object.entries(s.cats).filter(([, c]) => c.games >= 2)
+      .map(([cat, c]) => ({ cat, ...c, pct: Math.round((c.wins / c.games) * 100) }))
+      .sort((a, b) => b.pct - a.pct || b.games - a.games);
+    const sig = Object.entries(s.picks).sort((a, b) => b[1] - a[1])[0];
+    return {
+      name: s.name, played: s.played, voteGames: s.voteGames, wins: s.wins, votes: s.votes,
+      winPct: s.voteGames ? Math.round((s.wins / s.voteGames) * 100) : null,
+      votesPerGame: s.voteGames ? round(s.votes / s.voteGames, 2) : null,
+      avgSpent: s.played ? round(s.spent / s.played) : null,
+      avgLeft: s.played ? round(s.left / s.played) : null,
+      bidsPerGame: s.played ? round(s.bids / s.played) : null,
+      streak: s.streak, bestStreak: s.bestStreak,
+      bestCategory: cats[0] || null,
+      signature: sig && sig[1] >= 2 ? { item: sig[0], times: sig[1] } : null,
+      votesCast: s.votesCast,
+      kingPct: s.votesCast ? Math.round((s.kingVotes / s.votesCast) * 100) : null
+    };
+  });
   const rated = all.filter(s => s.voteGames >= MIN_GAMES);
-  const top = (list, by, dir = -1) => [...list].sort((a, b) => dir * (a[by] - b[by]) || a.name.localeCompare(b.name)).slice(0, 5);
+  const regulars = all.filter(s => s.played >= MIN_GAMES);
+  const top = (list, by, dir = -1, n = 5) => [...list].filter(s => s[by] != null)
+    .sort((a, b) => dir * (a[by] - b[by]) || a.name.localeCompare(b.name)).slice(0, n);
 
   return {
     minGames: MIN_GAMES,
     totalGames: data.games.length,
-    players: [...all].sort((a, b) => b.played - a.played || a.name.localeCompare(b.name)),
+    players: all.filter(s => s.played || findProfile(s.name)).sort((a, b) => b.played - a.played || a.name.localeCompare(b.name)),
     boards: {
       mostPlayed: top(all.filter(s => s.played), 'played'),
       bestVotes: top(rated, 'votesPerGame'),
       worstVotes: top(rated, 'votesPerGame', 1),
       bestWin: top(rated, 'winPct'),
-      worstWin: top(rated, 'winPct', 1)
+      worstWin: top(rated, 'winPct', 1),
+      bigSpender: top(regulars, 'avgSpent'),
+      tightWallet: top(regulars, 'avgLeft'),
+      busiest: top(regulars, 'bidsPerGame'),
+      longestStreak: top(all.filter(s => s.bestStreak), 'bestStreak'),
+      currentStreak: top(all.filter(s => s.streak), 'streak'),
+      kingmaker: top(all.filter(s => s.votesCast >= MIN_GAMES), 'kingPct')
     },
     together: Object.entries(pairs).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, n]) => ({ names: k.split('|'), games: n })),
+    headToHead: Object.values(h2h).sort((x, y) => (y.aWins + y.bWins) - (x.aWins + x.bWins)).slice(0, 8),
+    signings: signings.sort((a, b) => b.price - a.price).slice(0, 5),
+    mostPicked: Object.values(items).sort((a, b) => b.count - a.count || a.item.localeCompare(b.item)).slice(0, 10),
+    hottest: Object.values(items).filter(i => i.count >= 2).map(i => ({ item: i.item, count: i.count, avg: round(i.total / i.count) }))
+      .sort((a, b) => b.avg - a.avg).slice(0, 5),
+    nemesis: Object.entries(outbids).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, n]) => { const [by, over] = k.split('|'); return { by, over, n }; }),
     recent: data.games.slice(-10).reverse().map(g => ({
       at: g.at, category: g.category, voted: g.voted,
       winners: g.players.filter(p => p.won).map(p => p.name),

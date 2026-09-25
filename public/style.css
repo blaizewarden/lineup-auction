@@ -242,3 +242,4 @@ main.wide { max-width: 1000px; }
 .table-wrap { overflow-x: auto; }
 #profilesBox summary { cursor: pointer; }
 select.input.small-select { width: auto; padding: 6px 8px; font-size: 14px; }
+.stats-head { font-family: var(--display); font-weight: 400; font-size: 32px; margin: 20px 0 10px; }
