@@ -207,11 +207,12 @@ function stillIn(a) {
   return game.players.filter(p => p.id !== a.highBidderId && !a.passed.includes(p.id) && slotsLeft(p) > 0 && maxBid(p) >= need);
 }
 
-// the last player left on a lot nobody has bid on: they skip or take it
+// once only one player in the game still has empty slots, they get one skip,
+// after that anything they don't bid on is theirs at the minimum
 function finalBidderId(a) {
   if (a.highBidderId) return null;
-  const left = stillIn(a);
-  return left.length === 1 ? left[0].id : null;
+  const active = game.players.filter(canPlay);
+  return active.length === 1 && stillIn(a).some(p => p.id === active[0].id) ? active[0].id : null;
 }
 
 // full timer while someone can still bid, otherwise wrap it up quickly
@@ -273,12 +274,12 @@ function sell() {
   game.timers.sold = setTimeout(() => { nextTurn(); broadcast(); }, SOLD_PAUSE_MS);
 }
 
-function endDraft() {
+function endDraft(early = false) {
   clearTimers();
   game.auction = null;
   game.turnId = null;
-  // broke players with open slots get random leftovers at $0
-  for (const p of game.players) {
+  // broke players with open slots get random leftovers at $0 (ending early leaves them empty)
+  for (const p of early ? [] : game.players) {
     while (slotsLeft(p) > 0) {
       let item;
       if (game.pool.length) {
@@ -527,6 +528,11 @@ io.on('connection', socket => {
     game.results = null;
     game.phase = 'voting';
     broadcast();
+  });
+
+  socket.on('endGame', () => {
+    if (!isHost() || !['bidding', 'sold'].includes(game.phase)) return;
+    endDraft(true);
   });
 
   socket.on('backToLobby', () => {

@@ -106,7 +106,7 @@ function lotHTML(s, big = false) {
         ? `<div class="high ${leading ? 'mine' : ''}"><b>$${a.highBid}</b><span>${leading ? 'You' : esc(playerName(a.highBidderId))}</span></div>`
         : `<div class="high"><b>$${s.settings.minBid}</b><span>No bids yet</span></div>`}
       ${a.passed.length ? `<p class="note">Passed: ${a.passed.map(id => esc(playerName(id))).join(', ')}</p>` : ''}
-      ${a.finalId ? `<p class="note">${esc(playerName(a.finalId))} is the last one left: bid, skip, or take it for $${s.settings.minBid}</p>` : ''}
+      ${a.finalId ? `<p class="note">${esc(playerName(a.finalId))} is the only player with empty slots: bid, skip, or take it for $${s.settings.minBid}</p>` : ''}
       <div class="clock" data-ends="${a.endsAt}" data-total="${s.settings.timer * 1000}" data-key="lot${a.lot}-${a.bids}" data-sound>
         <div class="clock-track"><div class="clock-fill"></div></div>
         <div class="clock-call"></div>

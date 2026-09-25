@@ -156,7 +156,7 @@ function renderLobby(s) {
       <h2>${esc(s.lobbyCategory.name)}</h2>
       <p>${esc(s.lobbyCategory.goal)}. $${st.budget} each, ${st.rosterSize} picks, ${st.timer} second bid timer.</p>
       ${s.lobbyCategory.about ? `<p class="note">${esc(s.lobbyCategory.about)}</p>` : ''}
-      <p class="note">Items are drawn at random. Everyone gets one skip for when they're the last one left on an item.</p>
+      <p class="note">Items are drawn at random. Pass as often as you like. If you end up the only player with empty slots, you get one skip, then you take what comes up for $1.</p>
       <div class="status">Waiting for ${esc(hostName)} to start</div>`);
   }
 
@@ -186,7 +186,8 @@ function renderBidding(s) {
     <section class="panel">
       <div data-region id="bidBox"></div>
       <div data-region data-keep id="customBox"></div>
-    </section>`);
+    </section>
+    <div data-region id="endBox"></div>`);
   setHTML($('#lotBox'), lotHTML(s));
 
   const a = s.auction, p = me();
@@ -205,8 +206,8 @@ function renderBidding(s) {
     const can = v => !leading && !passed && v <= cap && v >= next;
     const final = a.finalId === p.id;
     const warn = !final ? ''
-      : p.skipUsed ? `<div class="status warn">⚠️ Everyone else passed and you've used your skip. Bid now, or it's yours for $${s.settings.minBid} when the timer runs out.</div>`
-      : `<div class="status warn">⚠️ Everyone else passed. Bid, or use your one skip for the game. If the timer runs out, it's yours for $${s.settings.minBid}.</div>`;
+      : p.skipUsed ? `<div class="status warn">⚠️ You're the only player with empty slots and you've used your skip. Bid now, or it's yours for $${s.settings.minBid} when the timer runs out.</div>`
+      : `<div class="status warn">⚠️ You're the only player with empty slots. Bid, or use your one skip. If the timer runs out, it's yours for $${s.settings.minBid}.</div>`;
     if (passed) {
       html = `<div class="status">You passed on this one</div>`;
     } else {
@@ -227,6 +228,7 @@ function renderBidding(s) {
   setHTML($('#customBox'), custom);
   $('#bidBox').querySelectorAll('[data-bid]').forEach(b => { b.onclick = () => emit('bid', Number(b.dataset.bid)); });
   const pb = $('#passBtn'); if (pb) pb.onclick = () => emit('pass');
+  paintEndGame();
   const cb = $('#customBtn');
   if (cb) cb.onclick = () => {
     const v = Number($('#customBid').value);
@@ -237,10 +239,19 @@ function renderBidding(s) {
   if (ci) ci.onkeydown = e => { if (e.key === 'Enter') cb.click(); };
 }
 
+/* host can finish the draft early; empty slots stay empty */
+function paintEndGame() {
+  const box = $('#endBox');
+  setHTML(box, isHost() ? '<button class="btn ghost small" id="endGameBtn">End game now</button>' : '');
+  const b = $('#endGameBtn');
+  if (b) b.onclick = () => { if (confirm('End the draft now? Empty slots stay empty.')) emit('endGame'); };
+}
+
 /* ---------- sold ---------- */
 function renderSold(s) {
-  shell('sold', `<div data-region id="soldBox"></div>`);
+  shell('sold', `<div data-region id="soldBox"></div><div data-region id="endBox" style="margin-top:12px"></div>`);
   setHTML($('#soldBox'), soldHTML(s));
+  paintEndGame();
   if (s.lastSale && lastSoldLot !== s.lastSale.lot) { lastSoldLot = s.lastSale.lot; if (!s.lastSale.unsold) Sound.sold(); if (navigator.vibrate && s.lastSale.winnerId === App.myId) navigator.vibrate([60, 40, 60]); }
 }
 
