@@ -33,6 +33,7 @@ function loadCategories() {
         name: data.name,
         goal: data.goal || data.name,
         about: data.about || '',
+        details: data.details || {},
         style: ['poster', 'team', 'list'].includes(data.style) ? data.style : 'list',
         items: [...new Set((data.items || []).map(s => String(s).trim()).filter(Boolean))]
       };
@@ -167,11 +168,12 @@ function startGame() {
     : CATEGORIES.find(c => c.id === s.categoryId);
   game.meta = { name: cat.name, goal: cat.goal, about: cat.about, style: cat.style };
   game.pool = [...cat.items];
+  game.details = cat.details;
+  game.returnedAt = {};
   game.taken = new Set();
   game.history = [];
   game.lot = 0;
   game.lastSale = null;
-  game.lastReturned = null;
   game.votes = {};
   game.results = null;
   game.auction = null;
@@ -194,7 +196,13 @@ function nextTurn() {
   const turnPlayer = game.players[game.turnIndex];
   game.turnId = turnPlayer.id;
 
-  const choices = game.pool.length > 1 ? game.pool.filter(x => x !== game.lastReturned) : game.pool;
+  // fresh items first; passed items only come back once the fresh ones run out, oldest first
+  const fresh = game.pool.filter(x => !(x in game.returnedAt));
+  let choices = fresh;
+  if (!fresh.length) {
+    const oldest = Math.min(...game.pool.map(x => game.returnedAt[x]));
+    choices = game.pool.filter(x => game.returnedAt[x] === oldest);
+  }
   startAuction(choices[Math.floor(Math.random() * choices.length)], turnPlayer);
 }
 
@@ -233,6 +241,7 @@ function startAuction(item, nominator) {
   game.auction = {
     lot: game.lot,
     item,
+    desc: (game.details || {})[item] || '',
     highBid: 0,
     highBidderId: null,
     nominatorId: nominator.id,
@@ -261,12 +270,11 @@ function sell() {
     winner.roster.push({ item: a.item, price: a.highBid });
     game.lastSale = { lot: a.lot, item: a.item, price: a.highBid, winnerId: a.highBidderId, bids: a.bids, forced: !!a.forced };
     game.history.push(game.lastSale);
-    game.lastReturned = null;
   } else {
     // no takers: back in the pile
     game.taken.delete(norm(a.item));
     if (!game.pool.some(x => norm(x) === norm(a.item))) game.pool.push(a.item);
-    game.lastReturned = a.item;
+    game.returnedAt[a.item] = a.lot;
     game.lastSale = { lot: a.lot, item: a.item, price: 0, winnerId: null, bids: 0, unsold: true };
   }
   game.phase = 'sold';

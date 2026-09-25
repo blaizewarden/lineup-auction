@@ -94,6 +94,11 @@ function tickClocks() {
 requestAnimationFrame(tickClocks);
 
 /* ---------- shared markup ---------- */
+function moneyHTML(s) {
+  return `<div class="money">${s.players.map(p => `
+    <div class="${p.id === App.myId ? 'me' : ''}"><span>${esc(p.name)}</span><b>$${p.money}</b><small>${p.slotsLeft} left</small></div>`).join('')}</div>`;
+}
+
 function lotHTML(s, big = false) {
   const a = s.auction;
   if (!a) return '';
@@ -102,11 +107,12 @@ function lotHTML(s, big = false) {
     <div class="lot">
       <div class="lot-meta"><span>Lot ${a.lot}</span><span>Random draw</span></div>
       <div class="lot-name" style="font-size:${lotSize(a.item, big)}px">${esc(a.item)}</div>
+      ${a.desc ? `<p class="lot-desc">${esc(a.desc)}</p>` : ''}
       ${a.highBidderId
         ? `<div class="high ${leading ? 'mine' : ''}"><b>$${a.highBid}</b><span>${leading ? 'You' : esc(playerName(a.highBidderId))}</span></div>`
         : `<div class="high"><b>$${s.settings.minBid}</b><span>No bids yet</span></div>`}
-      ${a.passed.length ? `<p class="note">Passed: ${a.passed.map(id => esc(playerName(id))).join(', ')}</p>` : ''}
-      ${a.finalId ? `<p class="note">${esc(playerName(a.finalId))} is the only player with empty slots: bid, skip, or take it for $${s.settings.minBid}</p>` : ''}
+      <p class="note lot-note">${a.finalId ? `${esc(playerName(a.finalId))} is the only one left: bid, skip, or take it for $${s.settings.minBid}`
+        : a.passed.length ? `Passed: ${a.passed.map(id => esc(playerName(id))).join(', ')}` : '&nbsp;'}</p>
       <div class="clock" data-ends="${a.endsAt}" data-total="${s.settings.timer * 1000}" data-key="lot${a.lot}-${a.bids}" data-sound>
         <div class="clock-track"><div class="clock-fill"></div></div>
         <div class="clock-call"></div>

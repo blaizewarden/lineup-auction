@@ -220,3 +220,12 @@ textarea.input { min-height: 140px; font-weight: 500; resize: vertical; }
 .board-join code { font-family: var(--body); font-weight: 800; font-size: 28px; }
 .board .lineups { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 @media (max-width: 900px) { .board-grid { grid-template-columns: 1fr; } }
+.lot-desc { font-weight: 700; font-size: 16px; margin: -4px 0 10px; opacity: .85; }
+.board .lot-desc { font-size: 28px; }
+.lot-note { min-height: 1.5em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 4px 0; }
+.money { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 6px; margin-bottom: 12px; }
+.money div { background: var(--paper); color: var(--ink); border: var(--edge); border-radius: 6px; padding: 6px 8px; display: flex; flex-direction: column; min-width: 0; }
+.money div.me { background: var(--sun); }
+.money span { font-weight: 800; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.money b { font-family: var(--display); font-weight: 400; font-size: 24px; line-height: 1.1; }
+.money small { font-size: 12px; font-weight: 700; color: var(--mute); }

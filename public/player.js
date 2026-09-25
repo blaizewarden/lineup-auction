@@ -51,6 +51,11 @@ function shell(name, html) {
   if (view !== name) { main.innerHTML = html; view = name; main.querySelectorAll('[data-region]').forEach(r => { r._html = null; }); }
 }
 
+// ask before closing or going back mid-game
+window.addEventListener('beforeunload', e => {
+  if (App.state && App.state.phase !== 'lobby' && App.state.phase !== 'results' && me()) { e.preventDefault(); e.returnValue = ''; }
+});
+
 /* ---------- render ---------- */
 App.onState.push(render);
 function render() {
@@ -169,7 +174,7 @@ function renderLobby(s) {
       <button class="btn ghost small" id="leaveBtn">Leave</button>
     </div>`);
   $('#switchBtn').onclick = () => emit('switchRole');
-  $('#leaveBtn').onclick = () => { emit('leave'); forget(); view = null; render(); };
+  $('#leaveBtn').onclick = () => { if (!confirm('Leave the game?')) return; emit('leave'); forget(); view = null; render(); };
   $('#peopleBox').querySelectorAll('[data-kick]').forEach(b => { b.onclick = () => emit('kick', b.dataset.kick); });
 
   setHTML($('#inviteBox'), `
@@ -182,12 +187,13 @@ function renderLobby(s) {
 
 /* ---------- bidding ---------- */
 function renderBidding(s) {
-  shell('bidding', `<div data-region id="lotBox"></div>
+  shell('bidding', `<div data-region id="moneyBox"></div><div data-region id="lotBox"></div>
     <section class="panel">
       <div data-region id="bidBox"></div>
       <div data-region data-keep id="customBox"></div>
     </section>
     <div data-region id="endBox"></div>`);
+  setHTML($('#moneyBox'), moneyHTML(s));
   setHTML($('#lotBox'), lotHTML(s));
 
   const a = s.auction, p = me();
@@ -212,11 +218,11 @@ function renderBidding(s) {
       html = `<div class="status">You passed on this one</div>`;
     } else {
       html = `
-        ${warn || (leading ? '<div class="status">You hold the top bid</div>' : cap < next ? `<div class="status">You can't go above $${cap} on this one</div>` : '')}
         <div class="bids two">
           ${[1, 5].map(n => `<button class="btn" data-bid="${base + n}" ${can(base + n) ? '' : 'disabled'}><small>+$${n}</small><b>$${base + n}</b></button>`).join('')}
         </div>
-        ${leading || (final && p.skipUsed) ? '' : `<button class="btn plain wide" id="passBtn" style="margin-bottom:10px">${final ? 'Use my one skip' : 'Pass'}</button>`}`;
+        ${leading || (final && p.skipUsed) ? '' : `<button class="btn plain wide" id="passBtn" style="margin-bottom:10px">${final ? 'Use my one skip' : 'Pass'}</button>`}
+        ${warn || (leading ? '<div class="status">You hold the top bid</div>' : cap < next ? `<div class="status">You can't go above $${cap} on this one</div>` : '')}`;
     }
     if (!passed && !leading) custom = `
       <div class="custom-bid" style="grid-template-columns:1fr auto">
@@ -249,7 +255,8 @@ function paintEndGame() {
 
 /* ---------- sold ---------- */
 function renderSold(s) {
-  shell('sold', `<div data-region id="soldBox"></div><div data-region id="endBox" style="margin-top:12px"></div>`);
+  shell('sold', `<div data-region id="moneyBox"></div><div data-region id="soldBox"></div><div data-region id="endBox" style="margin-top:12px"></div>`);
+  setHTML($('#moneyBox'), moneyHTML(s));
   setHTML($('#soldBox'), soldHTML(s));
   paintEndGame();
   if (s.lastSale && lastSoldLot !== s.lastSale.lot) { lastSoldLot = s.lastSale.lot; if (!s.lastSale.unsold) Sound.sold(); if (navigator.vibrate && s.lastSale.winnerId === App.myId) navigator.vibrate([60, 40, 60]); }
