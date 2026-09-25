@@ -1,7 +1,9 @@
 {
- "name": "Greatest movies",
+ "name": "Movies",
  "goal": "Desert island collection",
+ "about": "The greatest films ever made, any era or genre.",
  "style": "list",
+ "group": "Screen",
  "items": [
   "The Godfather",
   "The Godfather Part II",

@@ -1,7 +1,9 @@
 {
- "name": "2000s and newer bands",
+ "name": "Bands (2000s on)",
  "goal": "Festival lineup",
+ "about": "Bands that broke through in 2000 or later.",
  "style": "poster",
+ "group": "Music",
  "items": [
   "Arctic Monkeys",
   "The Strokes",

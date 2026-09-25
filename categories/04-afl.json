@@ -1,7 +1,9 @@
 {
- "name": "AFL legends",
+ "name": "AFL (all-time)",
  "goal": "All-time AFL team",
+ "about": "The greats from any era, from the old VFL days to now. Mostly retired, plus a few of today's stars.",
  "style": "team",
+ "group": "Sport",
  "items": [
   "Gary Ablett Jr",
   "Gary Ablett Sr",
@@ -203,6 +205,5 @@
   "Nigel Smart",
   "Ben Hart",
   "Simon Goodwin"
- ],
- "about": "The greats from any era, from the old VFL days to now. Mostly retired, plus a few of today's stars."
+ ]
 }

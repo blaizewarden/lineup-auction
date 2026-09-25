@@ -1,8 +1,9 @@
 {
- "name": "Current AFL players",
- "goal": "AFL team",
+ "name": "AFL (current players)",
+ "goal": "2025 AFL team",
  "about": "Players on an AFL list in the 2025 season. A few may have retired or changed clubs since.",
  "style": "team",
+ "group": "Sport",
  "items": [
   "Marcus Bontempelli",
   "Patrick Cripps",

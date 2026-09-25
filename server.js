@@ -37,6 +37,7 @@ function loadCategories() {
         name: data.name,
         goal: data.goal || data.name,
         about: data.about || '',
+        group: data.group || 'Other',
         details: data.details || {},
         style: ['poster', 'team', 'list'].includes(data.style) ? data.style : 'list',
         items: [...new Set((data.items || []).map(s => String(s).trim()).filter(Boolean))]
@@ -134,7 +135,7 @@ function publicState() {
   return {
     phase: game.phase,
     settings: s,
-    categories: CATEGORIES.map(c => ({ id: c.id, name: c.name, goal: c.goal, about: c.about, count: c.items.length })),
+    categories: CATEGORIES.map(c => ({ id: c.id, name: c.name, goal: c.goal, about: c.about, group: c.group, count: c.items.length })),
     lobbyCategory: cat ? { name: cat.name, goal: cat.goal, about: cat.about }
       : { name: 'Random category', goal: 'Revealed when the draft starts' },
     meta: game.meta,

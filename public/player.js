@@ -145,7 +145,14 @@ function renderLobby(s) {
 
   const st = s.settings;
   if (isHost()) {
-    const opts = s.categories.map(c => `<option value="${c.id}" ${c.id === st.categoryId ? 'selected' : ''}>${esc(c.name)}: ${esc(c.goal)}</option>`).join('');
+    // one <optgroup> per theme, in the order the groups first appear
+    const groups = [];
+    for (const c of s.categories) {
+      const g = groups.find(x => x.name === c.group) || (groups.push({ name: c.group, cats: [] }), groups[groups.length - 1]);
+      g.cats.push(c);
+    }
+    const opts = groups.map(g => `<optgroup label="${esc(g.name)}">${g.cats.map(c =>
+      `<option value="${c.id}" ${c.id === st.categoryId ? 'selected' : ''}>${esc(c.name)}: ${esc(c.goal)}</option>`).join('')}</optgroup>`).join('');
     const enough = s.players.length >= 2;
     setHTML($('#settingsBox'), `
       <h2>Pick a category</h2>

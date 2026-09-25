@@ -1,8 +1,9 @@
 {
- "name": "Champions League legends",
- "goal": "All-time Champions League XI",
+ "name": "Soccer (Champions League)",
+ "goal": "All-time XI",
  "about": "Every player here has played in the Champions League at some point, from 1992 to now. Legends and today's stars.",
  "style": "team",
+ "group": "Sport",
  "items": [
   "Iker Casillas",
   "Gianluigi Buffon",

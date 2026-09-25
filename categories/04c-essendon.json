@@ -1,8 +1,9 @@
 {
- "name": "Essendon greats",
- "goal": "Greatest ever Essendon team",
+ "name": "AFL (Essendon)",
+ "goal": "All-time Bombers team",
  "about": "Essendon players from 1989 to now, plus the club's all-time greats Coleman, Hutchison and Reynolds.",
  "style": "team",
+ "group": "Sport",
  "items": [
   "Dick Reynolds",
   "John Coleman",

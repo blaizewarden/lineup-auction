@@ -1,7 +1,9 @@
 {
  "name": "Movie villains",
  "goal": "Supervillain team",
+ "about": "Baddies from film and TV.",
  "style": "list",
+ "group": "Screen",
  "items": [
   "Darth Vader",
   "The Joker",

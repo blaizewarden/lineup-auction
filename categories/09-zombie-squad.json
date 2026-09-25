@@ -1,7 +1,9 @@
 {
  "name": "Celebrities",
- "goal": "Zombie apocalypse survival squad",
+ "goal": "Zombie apocalypse squad",
+ "about": "Famous people alive today, useful ones and useless ones.",
  "style": "list",
+ "group": "People",
  "items": [
   "Bear Grylls",
   "Keanu Reeves",

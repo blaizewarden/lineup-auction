@@ -1,7 +1,9 @@
 {
- "name": "Songs for an album",
- "goal": "Tracklist",
+ "name": "Songs (all time)",
+ "goal": "Album tracklist",
+ "about": "Famous songs from any artist and any era.",
  "style": "list",
+ "group": "Music",
  "items": [
   "Bohemian Rhapsody (Queen)",
   "Smells Like Teen Spirit (Nirvana)",

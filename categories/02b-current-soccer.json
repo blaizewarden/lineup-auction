@@ -1,8 +1,9 @@
 {
- "name": "Current soccer players",
- "goal": "Dream team",
+ "name": "Soccer (current players)",
+ "goal": "Starting XI",
  "about": "Players still playing in the 2025/26 season, from any league. Not all of them have played in the Champions League.",
  "style": "team",
+ "group": "Sport",
  "items": [
   "Thibaut Courtois",
   "Alisson Becker",

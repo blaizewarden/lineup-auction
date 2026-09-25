@@ -1,7 +1,9 @@
 {
- "name": "Triple J Hottest 100 songs",
+ "name": "Songs (Hottest 100)",
  "goal": "Road trip playlist",
+ "about": "Songs that made a Triple J Hottest 100 in any year.",
  "style": "list",
+ "group": "Music",
  "items": [
   "Wonderwall (Oasis)",
   "Self Esteem (The Offspring)",

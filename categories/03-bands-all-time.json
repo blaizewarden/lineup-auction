@@ -1,7 +1,9 @@
 {
- "name": "Bands of any era",
+ "name": "Bands (any era)",
  "goal": "Festival lineup",
+ "about": "Every era, from the '60s to now. The modern bands are in here too, plus a few shockers.",
  "style": "poster",
+ "group": "Music",
  "items": [
   "The Beatles",
   "Queen",

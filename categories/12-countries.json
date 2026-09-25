@@ -1,7 +1,9 @@
 {
  "name": "Countries",
  "goal": "World tour itinerary",
+ "about": "120 countries to build a trip from.",
  "style": "list",
+ "group": "Wildcards",
  "items": [
   "Japan",
   "Italy",
