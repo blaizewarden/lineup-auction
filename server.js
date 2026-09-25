@@ -174,6 +174,7 @@ function startGame() {
     : CATEGORIES.find(c => c.id === s.categoryId);
   game.meta = { name: cat.name, goal: cat.goal, about: cat.about, style: cat.style };
   game.id = Date.now();
+  game.endedEarly = false;
   game.pool = [...cat.items];
   game.details = cat.details;
   game.returnedAt = {};
@@ -291,6 +292,7 @@ function sell() {
 
 function endDraft(early = false) {
   clearTimers();
+  game.endedEarly = early;
   game.auction = null;
   game.turnId = null;
   // broke players with open slots get random leftovers at $0 (ending early leaves them empty)
@@ -329,7 +331,8 @@ function finishResults(voted) {
   }
   game.results = { voted: voted && totalVotes > 0, tally, winners, totalVotes };
   game.phase = 'results';
-  store.recordGame({
+  // games ended early with the button don't count
+  if (!game.endedEarly) store.recordGame({
     id: game.id,
     at: new Date().toISOString(),
     category: game.meta.name,

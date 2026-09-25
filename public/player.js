@@ -286,9 +286,9 @@ function renderBidding(s) {
 /* host can finish the draft early; empty slots stay empty */
 function paintEndGame() {
   const box = $('#endBox');
-  setHTML(box, isHost() ? '<button class="btn ghost small" id="endGameBtn">End game now</button>' : '');
+  setHTML(box, isHost() ? '<button class="btn plain small" id="endGameBtn">End game now</button>' : '');
   const b = $('#endGameBtn');
-  if (b) b.onclick = () => { if (confirm('End the draft now? Empty slots stay empty.')) emit('endGame'); };
+  if (b) b.onclick = () => { if (confirm("End the draft now? This game won't count in the stats.")) emit('endGame'); };
 }
 
 /* ---------- sold ---------- */
