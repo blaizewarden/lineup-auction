@@ -12,6 +12,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const SOLD_PAUSE_MS = 2800;
 const HOST_HANDOVER_MS = 20000;
 const MAX_PLAYERS = 8;
+const VERSION = String(Date.now()); // changes on every deploy, so open pages know to reload
 
 const app = express();
 const server = http.createServer(app);
@@ -153,6 +154,7 @@ function publicState() {
     voterIds: eligibleVoters(),
     results: game.results,
     serverNow: Date.now(),
+    version: VERSION,
     joinUrl: JOIN_URL,
     qr: JOIN_QR
   };

@@ -3,6 +3,9 @@ const socket = io();
 const App = { state: null, offset: 0, myId: null, role: null, onState: [] };
 
 socket.on('state', s => {
+  // a new version went live: reload, but never in the middle of a draft
+  App.version = App.version || s.version;
+  if (s.version !== App.version && ['lobby', 'results'].includes(s.phase)) return location.reload();
   App.offset = s.serverNow - Date.now();
   App.state = s;
   App.onState.forEach(fn => fn(s));
