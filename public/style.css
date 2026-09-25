@@ -240,3 +240,5 @@ main.wide { max-width: 1000px; }
 .stats-table th, .stats-table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid rgba(10,15,60,.15); }
 .stats-table th:not(:first-child), .stats-table td:not(:first-child) { text-align: right; }
 .table-wrap { overflow-x: auto; }
+#profilesBox summary { cursor: pointer; }
+select.input.small-select { width: auto; padding: 6px 8px; font-size: 14px; }

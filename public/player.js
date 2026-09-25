@@ -140,7 +140,8 @@ function renderLobby(s) {
   shell('lobby', `
     <section class="panel" data-region data-keep id="settingsBox"></section>
     <section class="panel" data-region id="peopleBox"></section>
-    <section class="panel" data-region id="inviteBox"></section>`);
+    <section class="panel" data-region id="inviteBox"></section>
+    <section class="panel" data-region data-keep id="profilesBox"></section>`);
 
   const st = s.settings;
   if (isHost()) {
@@ -188,6 +189,38 @@ function renderLobby(s) {
       ${s.qr ? `<img src="${s.qr}" alt="QR code to join">` : ''}
       <div><p class="note">Scan or open</p><code>${esc(s.joinUrl)}</code></div>
     </div>`);
+
+  paintProfiles(s);
+}
+
+/* host only: delete or merge profiles (fixes typos like "Mat") */
+function paintProfiles(s) {
+  const box = $('#profilesBox');
+  if (!isHost()) { box.hidden = true; return; }
+  box.hidden = false;
+  const others = n => s.profiles.filter(x => x !== n).map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('');
+  setHTML(box, `
+    <details ${box.querySelector('details[open]') ? 'open' : ''}>
+      <summary><h2 style="display:inline">Manage profiles</h2></summary>
+      <p class="note" style="margin-top:10px">Merge moves someone's games onto another name, e.g. "Mat" into "Matt". Delete removes the profile and all its stats.</p>
+      <ul class="people">${s.profiles.map(n => `
+        <li>
+          <span class="grow">${esc(n)}</span>
+          <select class="input small-select" data-merge-from="${esc(n)}"><option value="">Merge into…</option>${others(n)}</select>
+          <button class="btn ghost small" data-delete="${esc(n)}">Delete</button>
+        </li>`).join('')}</ul>
+    </details>`);
+  box.querySelectorAll('[data-delete]').forEach(b => {
+    b.onclick = () => { const n = b.dataset.delete; if (confirm(`Delete ${n}? This removes the profile and all their stats. It can't be undone.`)) emit('deleteProfile', n); };
+  });
+  box.querySelectorAll('[data-merge-from]').forEach(sel => {
+    sel.onchange = () => {
+      const from = sel.dataset.mergeFrom, into = sel.value;
+      if (into && confirm(`Merge ${from} into ${into}? ${from}'s games move to ${into} and ${from} is removed. It can't be undone.`)) emit('mergeProfile', { from, into });
+      sel.value = '';
+      sel.blur();
+    };
+  });
 }
 
 /* ---------- bidding ---------- */

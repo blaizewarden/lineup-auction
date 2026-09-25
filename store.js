@@ -36,7 +36,8 @@ async function load() {
   } catch (err) {
     console.error('  Could not load stats:', err.message);
   }
-  for (const name of STARTERS) addProfile(name, false);
+  // only seed the starting names on a brand new store, so deleted ones stay deleted
+  if (!data.profiles.length && !data.games.length) for (const name of STARTERS) addProfile(name, false);
   console.log(`  Stats: ${data.profiles.length} profiles, ${data.games.length} games (${useGist ? 'gist' : 'local file'})`);
 }
 
@@ -79,6 +80,28 @@ function recordGame(record) {
   const i = data.games.findIndex(g => g.id === record.id);
   if (i >= 0) data.games[i] = record; else data.games.push(record);
   save();
+}
+
+const findProfile = name => data.profiles.find(p => key(p) === key(name));
+
+// removes the profile and every game result it has
+function deleteProfile(name) {
+  if (!findProfile(name)) return false;
+  data.profiles = data.profiles.filter(p => key(p) !== key(name));
+  for (const g of data.games) g.players = g.players.filter(p => key(p.name) !== key(name));
+  data.games = data.games.filter(g => g.players.length);
+  save();
+  return true;
+}
+
+// moves all of `from`'s games onto `into`, then removes `from`
+function mergeProfile(from, into) {
+  const target = findProfile(into);
+  if (!findProfile(from) || !target || key(from) === key(into)) return false;
+  for (const g of data.games) for (const p of g.players) if (key(p.name) === key(from)) p.name = target;
+  data.profiles = data.profiles.filter(p => key(p) !== key(from));
+  save();
+  return true;
 }
 
 const MIN_GAMES = 3;
@@ -132,4 +155,4 @@ function stats() {
   };
 }
 
-module.exports = { data, load, save, addProfile, recordGame, stats };
+module.exports = { data, load, save, addProfile, deleteProfile, mergeProfile, recordGame, stats };

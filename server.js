@@ -475,6 +475,19 @@ io.on('connection', socket => {
     broadcast();
   });
 
+  // host tidies up profiles from the lobby; people in the room can't be changed
+  const inRoom = name => [...game.players, ...game.judges].some(x => norm(x.name) === norm(name));
+  socket.on('deleteProfile', name => {
+    if (!isHost() || game.phase !== 'lobby') return;
+    if (inRoom(name)) return fail(`${name} is in the room. Remove them first.`);
+    if (store.deleteProfile(String(name))) broadcast();
+  });
+  socket.on('mergeProfile', ({ from, into } = {}) => {
+    if (!isHost() || game.phase !== 'lobby') return;
+    if (inRoom(from)) return fail(`${from} is in the room. Remove them first.`);
+    if (store.mergeProfile(String(from), String(into))) broadcast();
+  });
+
   socket.on('settings', (patch = {}) => {
     if (!isHost() || game.phase !== 'lobby') return;
     const s = game.settings;
