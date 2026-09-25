@@ -229,3 +229,14 @@ textarea.input { min-height: 140px; font-weight: 500; resize: vertical; }
 .money span { font-weight: 800; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .money b { font-family: var(--display); font-weight: 400; font-size: 24px; line-height: 1.1; }
 .money small { font-size: 12px; font-weight: 700; color: var(--mute); }
+.profiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-bottom: 14px; }
+a.icon-btn { text-decoration: none; color: inherit; }
+main.wide { max-width: 1000px; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.stats-grid ol { margin: 0; padding-left: 22px; }
+.stats-grid li { padding: 4px 0; font-weight: 700; }
+.stats-grid li em { float: right; font-style: normal; color: var(--mute); }
+.stats-table { width: 100%; border-collapse: collapse; font-weight: 700; }
+.stats-table th, .stats-table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid rgba(10,15,60,.15); }
+.stats-table th:not(:first-child), .stats-table td:not(:first-child) { text-align: right; }
+.table-wrap { overflow-x: auto; }

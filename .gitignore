@@ -3,3 +3,4 @@ node_modules.nosync
 run.log
 .DS_Store
 .deploy-hook
+data/

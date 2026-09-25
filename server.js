@@ -6,6 +6,7 @@ const os = require('os');
 const crypto = require('crypto');
 const QRCode = require('qrcode');
 const { Server } = require('socket.io');
+const store = require('./store');
 
 const PORT = Number(process.env.PORT) || 3000;
 const SOLD_PAUSE_MS = 2800;
@@ -19,6 +20,8 @@ const io = new Server(server);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/fonts', express.static(path.join(__dirname, 'node_modules', '@fontsource')));
 app.get('/board', (req, res) => res.sendFile(path.join(__dirname, 'public', 'board.html')));
+app.get('/stats', (req, res) => res.sendFile(path.join(__dirname, 'public', 'stats.html')));
+app.get('/api/stats', (req, res) => res.json(store.stats()));
 
 // ---------- categories ----------
 function loadCategories() {
@@ -135,6 +138,7 @@ function publicState() {
       : { name: 'Random category', goal: 'Revealed when the draft starts' },
     meta: game.meta,
     hostId: game.hostId,
+    profiles: store.data.profiles,
     players: game.players.map(p => ({
       id: p.id, name: p.name, money: p.money, roster: p.roster, connected: p.connected,
       slotsLeft: slotsLeft(p), maxBid: maxBid(p), active: game.phase !== 'lobby' && canPlay(p), skipUsed: !!p.skipUsed
@@ -167,6 +171,7 @@ function startGame() {
     ? CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)]
     : CATEGORIES.find(c => c.id === s.categoryId);
   game.meta = { name: cat.name, goal: cat.goal, about: cat.about, style: cat.style };
+  game.id = Date.now();
   game.pool = [...cat.items];
   game.details = cat.details;
   game.returnedAt = {};
@@ -322,6 +327,19 @@ function finishResults(voted) {
   }
   game.results = { voted: voted && totalVotes > 0, tally, winners, totalVotes };
   game.phase = 'results';
+  store.recordGame({
+    id: game.id,
+    at: new Date().toISOString(),
+    category: game.meta.name,
+    voted: game.results.voted,
+    players: game.players.map(p => ({
+      name: p.name,
+      votes: tally[p.id] || 0,
+      won: winners.includes(p.id),
+      spent: game.settings.budget - p.money,
+      roster: p.roster.map(r => r.item)
+    }))
+  });
 }
 
 function maybeCloseVoting() {
@@ -402,6 +420,7 @@ io.on('connection', socket => {
 
     const seat = { id: shortId(), token: token(), name, connected: true };
     if (finalRole === 'player') {
+      seat.name = store.addProfile(name);
       Object.assign(seat, { money: game.settings.budget, roster: [] });
       game.players.push(seat);
     } else {
@@ -442,6 +461,7 @@ io.on('connection', socket => {
     } else {
       if (game.players.length >= MAX_PLAYERS) return fail('The game is full.');
       game.judges = game.judges.filter(x => x.id !== p.id);
+      store.addProfile(p.name);
       game.players.push({ id: p.id, token: p.token, name: p.name, connected: true, money: game.settings.budget, roster: [] });
       ensureHost();
     }
@@ -571,7 +591,7 @@ io.on('connection', socket => {
   });
 });
 
-server.listen(PORT, '0.0.0.0', () => {
+store.load().then(() => server.listen(PORT, '0.0.0.0', () => {
   console.log('\n  Lineup Auction is running\n');
   console.log(`  Phones join at:   ${JOIN_URL}`);
   console.log(`  Big screen board: ${JOIN_URL}/board\n`);
@@ -581,7 +601,7 @@ server.listen(PORT, '0.0.0.0', () => {
     const cmd = process.platform === 'darwin' ? `open "${url}"` : process.platform === 'win32' ? `start "" "${url}"` : `xdg-open "${url}"`;
     require('child_process').exec(cmd, () => {});
   }
-});
+}));
 
 server.on('error', err => {
   if (err.code === 'EADDRINUSE') {

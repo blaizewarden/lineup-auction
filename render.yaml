@@ -8,3 +8,7 @@ services:
     envVars:
       - key: NO_OPEN
         value: "1"
+      - key: GIST_ID
+        value: 2aa148d01243bd5298524e809c7f379a
+      - key: GIST_TOKEN
+        sync: false

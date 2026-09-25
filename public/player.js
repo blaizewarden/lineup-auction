@@ -16,8 +16,8 @@ function forget() {
   App.myId = null; App.role = null;
   localStorage.removeItem('la-token');
 }
-function join(role) {
-  const name = ($('#name') || {}).value || '';
+function join(role, picked) {
+  const name = picked || ($('#name') || {}).value || '';
   if (!name.trim()) { toast('Enter a name to join.', 'error'); return; }
   Sound.wake();
   socket.emit('join', { name, role }, res => {
@@ -92,9 +92,10 @@ function render() {
 function renderJoin(s) {
   shell('join', `
     <section class="panel">
-      <h2>Join the auction</h2>
-      <label class="field"><span>Your name</span>
-        <input class="input" id="name" maxlength="24" autocomplete="nickname" value="${esc(localStorage.getItem('la-name') || '')}">
+      <h2>Who are you?</h2>
+      <div class="profiles" data-region id="profileBox"></div>
+      <label class="field"><span>New player</span>
+        <input class="input" id="name" maxlength="24" autocomplete="nickname" placeholder="Not on the list? Type your name">
       </label>
       <div class="row">
         <button class="btn grow" id="joinPlayer">Join as a player</button>
@@ -103,6 +104,10 @@ function renderJoin(s) {
       <p class="note" style="margin-top:12px">Judges don't bid. They vote on the best lineup at the end.</p>
     </section>
     <section class="panel" data-region id="joinPeople"></section>`);
+  const inGame = new Set([...s.players, ...s.judges].filter(x => x.connected).map(x => x.name.toLowerCase()));
+  const last = (localStorage.getItem('la-name') || '').toLowerCase();
+  setHTML($('#profileBox'), s.profiles.map(n => `<button class="btn ${n.toLowerCase() === last ? 'pink' : 'plain'}" data-profile="${esc(n)}" ${inGame.has(n.toLowerCase()) ? 'disabled' : ''}>${esc(n)}</button>`).join(''));
+  $('#profileBox').querySelectorAll('[data-profile]').forEach(b => { b.onclick = () => join(s.phase === 'lobby' ? 'player' : 'judge', b.dataset.profile); });
   $('#joinPlayer').onclick = () => join('player');
   $('#joinJudge').onclick = () => join('judge');
   $('#name').onkeydown = e => { if (e.key === 'Enter') join(s.phase === 'lobby' ? 'player' : 'judge'); };
@@ -297,6 +302,7 @@ function renderResults(s) {
     <p>${sub}</p>
     <div class="row">
       <button class="btn grow" id="cardBtn">Save results card</button>
+      <a class="btn plain grow" href="/stats">Stats</a>
       ${canOpen ? '<button class="btn plain grow" id="openVote">Open voting</button>' : ''}
       ${isHost() ? '<button class="btn pink grow" id="againBtn">New game</button>' : ''}
     </div>
