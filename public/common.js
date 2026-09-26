@@ -155,6 +155,7 @@ function lineupsHTML(s, opts = {}) {
     else if (p.slotsLeft > 0 && s.phase !== 'lobby') note = `Can bid up to $${p.maxBid}`;
     const votes = res && res.voted ? `<div class="votes">${res.tally[p.id] || 0} vote${res.tally[p.id] === 1 ? '' : 's'}${res.winners.includes(p.id) ? ', winner' : ''}</div>` : '';
     const voteBtn = opts.voteBtn ? opts.voteBtn(p) : '';
+    const kickBtn = opts.kickBtn ? opts.kickBtn(p) : '';
     return `
       <article class="lineup ${cls.join(' ')}">
         <header><b>${esc(p.name)}${p.id === App.myId ? ' (you)' : ''}</b><span>$${p.money} left</span></header>
@@ -162,6 +163,7 @@ function lineupsHTML(s, opts = {}) {
         <ol>${items}${empties}</ol>
         ${note ? `<div class="slot-note">${note}</div>` : ''}
         ${voteBtn}
+        ${kickBtn}
       </article>`;
   }).join('')}</div>`;
 }

@@ -16,7 +16,7 @@ App.onState.push(s => {
   if (s.phase === 'lobby') {
     html = `
       <div class="panel board-join">
-        ${s.qr ? `<img src="${s.qr}" alt="QR code to join">` : ''}
+        <img src="/qr.png" alt="QR code to join">
         <div>
           <h2>Scan to join</h2>
           <p>Scan or open</p>
@@ -33,7 +33,7 @@ App.onState.push(s => {
   } else if (s.phase === 'voting') {
     html = `
       <div class="panel board-join">
-        ${s.qr ? `<img src="${s.qr}" alt="QR code to join as a judge">` : ''}
+        <img src="/qr.png" alt="QR code to join as a judge">
         <div>
           <h2>Voting is open</h2>
           <p>${s.votedIds.length} of ${s.voterIds.length} votes in.</p>

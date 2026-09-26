@@ -85,7 +85,10 @@ function render() {
     case 'voting': renderVoting(s); break;
     case 'results': renderResults(s); break;
   }
-  setHTML(table, s.phase === 'lobby' ? '' : `<h3>Lineups</h3>${lineupsHTML(s, s.phase === 'voting' ? { voteBtn: voteButton } : {})}`);
+  const opts = {};
+  if (s.phase === 'voting') opts.voteBtn = voteButton;
+  if (isHost() && s.phase !== 'lobby') opts.kickBtn = kickButton;
+  setHTML(table, s.phase === 'lobby' ? '' : `<h3>Lineups</h3>${lineupsHTML(s, opts)}`);
 }
 
 /* ---------- join ---------- */
@@ -193,7 +196,7 @@ function renderLobby(s) {
   setHTML($('#inviteBox'), `
     <h2>Get your mates in</h2>
     <div class="invite">
-      ${s.qr ? `<img src="${s.qr}" alt="QR code to join">` : ''}
+      <img src="/qr.png" alt="QR code to join">
       <div><p class="note">Scan or open</p><code>${esc(s.joinUrl)}</code></div>
     </div>`);
 
@@ -315,6 +318,16 @@ function voteButton(p) {
 }
 function castVote(id) { App._myVote = id; emit('vote', id); render(); }
 
+function kickButton(p) {
+  if (!isHost() || p.id === App.myId) return '';
+  return `<button class="btn ghost wide small" style="margin-top:10px" onclick="kickPlayer('${p.id}')">Remove ${esc(p.name)}</button>`;
+}
+function kickPlayer(id) {
+  const p = App.state.players.find(x => x.id === id);
+  if (!p) return;
+  if (confirm(`Remove ${p.name} from this game? Their lineup and money go with them. It can't be undone.`)) emit('kick', id);
+}
+
 function renderVoting(s) {
   shell('voting', `<section class="panel" data-region id="voteBox"></section>`);
   const canVote = s.voterIds.includes(App.myId);
@@ -335,8 +348,14 @@ function renderResults(s) {
   let head, sub;
   if (r.voted && r.winners.length === 1) { head = `${esc(playerName(r.winners[0]))} wins`; sub = `${r.tally[r.winners[0]]} of ${r.totalVotes} votes.`; }
   else if (r.voted && r.winners.length > 1) { head = `Shared win: ${r.winners.map(id => esc(playerName(id))).join(' and ')}`; sub = `Tied on ${r.tally[r.winners[0]]} votes each.`; }
-  else { head = 'Head to head. You decide.'; sub = 'No judges voted this time. Compare lineups and argue it out.'; }
+  else if (s.endedEarly) { head = 'Ended early'; sub = "This one doesn't count towards the stats."; }
+  else { head = 'Head to head. You decide.'; sub = 'No judges voted this time. Compare the lineups, argue it out, then call it below.'; }
   const canOpen = isHost() && !r.voted && s.voterIds.length > 0;
+  // a game ended early isn't recorded, so there's nothing to declare a winner for
+  const canDeclare = isHost() && !r.voted && !s.endedEarly;
+  const declare = !canDeclare ? '' : `
+    <p class="note" style="margin:14px 0 8px">Pick the winner so it counts in the stats.</p>
+    <div class="profiles">${s.players.map(p => `<button class="btn plain" data-win="${p.id}">${esc(p.name)}</button>`).join('')}</div>`;
   setHTML($('#resBox'), `
     <h2>${head}</h2>
     <p>${sub}</p>
@@ -346,7 +365,11 @@ function renderResults(s) {
       ${canOpen ? '<button class="btn plain grow" id="openVote">Open voting</button>' : ''}
       ${isHost() ? '<button class="btn pink grow" id="againBtn">New game</button>' : ''}
     </div>
-    ${isHost() && !r.voted && !canOpen ? '<p class="note" style="margin-top:10px">Want a verdict? Have someone scan the join code as a judge, then open voting.</p>' : ''}`);
+    ${declare}
+    ${canOpen ? '<p class="note" style="margin-top:10px">Or have everyone vote properly with Open voting.</p>' : ''}`);
+  $('#resBox').querySelectorAll('[data-win]').forEach(b => {
+    b.onclick = () => { const n = playerName(b.dataset.win); if (confirm(`Call it for ${n}? This is saved to the stats.`)) emit('declareWinner', b.dataset.win); };
+  });
   $('#cardBtn').onclick = () => showCard(s);
   const ov = $('#openVote'); if (ov) ov.onclick = () => emit('openVoting');
   const ag = $('#againBtn'); if (ag) ag.onclick = () => emit('backToLobby');

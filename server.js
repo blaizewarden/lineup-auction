@@ -61,9 +61,13 @@ function lanAddress() {
   return found[0] || 'localhost';
 }
 const JOIN_URL = process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || `http://${lanAddress()}:${PORT}`;
-let JOIN_QR = '';
-QRCode.toDataURL(JOIN_URL, { margin: 1, width: 480, color: { dark: '#0A0F3C', light: '#FFFFFF' } })
-  .then(url => { JOIN_QR = url; });
+let JOIN_QR = null;
+QRCode.toBuffer(JOIN_URL, { margin: 1, width: 480, color: { dark: '#0A0F3C', light: '#FFFFFF' } })
+  .then(buf => { JOIN_QR = buf; });
+// served as a file so it isn't re-sent inside every state broadcast
+app.get('/qr.png', (req, res) => JOIN_QR
+  ? res.type('png').set('Cache-Control', 'public, max-age=3600').send(JOIN_QR)
+  : res.sendStatus(503));
 
 // ---------- helpers ----------
 const token = () => crypto.randomBytes(12).toString('hex');
@@ -150,15 +154,14 @@ function publicState() {
     turnId: game.turnId,
     auction: game.auction && { ...game.auction, finalId: finalBidderId(game.auction) },
     lastSale: game.lastSale,
-    pool: game.pool,
     history: game.history.slice(-8),
     votedIds: Object.keys(game.votes),
     voterIds: eligibleVoters(),
     results: game.results,
+    endedEarly: !!game.endedEarly,
     serverNow: Date.now(),
     version: VERSION,
-    joinUrl: JOIN_URL,
-    qr: JOIN_QR
+    joinUrl: JOIN_URL
   };
 }
 let broadcastQueued = false;
@@ -335,23 +338,30 @@ function finishResults(voted) {
     const top = Math.max(...Object.values(tally));
     winners = Object.keys(tally).filter(id => tally[id] === top);
   }
-  game.results = { voted: voted && totalVotes > 0, tally, winners, totalVotes };
+  game.results = { voted: voted && totalVotes > 0, decided: 'vote', tally, winners, totalVotes };
   game.phase = 'results';
-  // games ended early with the button don't count
+  saveGameRecord();
+}
+
+// written on every result, and again if the host declares a winner afterwards
+function saveGameRecord() {
+  const r = game.results;
+  if (game.endedEarly || !r) return;
   const nameOf = id => (playerById(id) || judgeById(id) || {}).name || '?';
-  if (!game.endedEarly) store.recordGame({
+  store.recordGame({
     id: game.id,
     at: new Date().toISOString(),
     category: game.meta.name,
     budget: game.settings.budget,
-    voted: game.results.voted,
+    voted: r.voted,
+    decided: r.decided,
     players: game.players.map(p => ({
       name: p.name,
-      votes: tally[p.id] || 0,
-      won: winners.includes(p.id),
+      votes: r.tally[p.id] || 0,
+      won: r.winners.includes(p.id),
       spent: game.settings.budget - p.money,
       bids: game.bidCounts[p.id] || 0,
-      roster: p.roster.map(r => ({ item: r.item, price: r.price, filled: !!r.filled }))
+      roster: p.roster.map(x => ({ item: x.item, price: x.price, filled: !!x.filled }))
     })),
     votes: Object.entries(game.votes).map(([from, to]) => ({ from: nameOf(from), to: nameOf(to) })),
     outbids: Object.entries(game.outbids).map(([k, n]) => { const [by, over] = k.split('>'); return { by: nameOf(by), over: nameOf(over), n }; })
@@ -485,9 +495,34 @@ io.on('connection', socket => {
   });
 
   socket.on('kick', id => {
-    if (!isHost() || game.phase !== 'lobby' || id === game.hostId) return;
+    if (!isHost() || id === game.hostId) return;
+    if (!playerById(id) && !judgeById(id)) return;
     game.players = game.players.filter(x => x.id !== id);
     game.judges = game.judges.filter(x => x.id !== id);
+    // drop the vote they cast and any votes cast for them
+    delete game.votes[id];
+    for (const [voter, target] of Object.entries(game.votes)) if (target === id) delete game.votes[voter];
+    ensureHost();
+
+    const a = game.auction;
+    if (game.phase === 'bidding' && a) {
+      a.passed = a.passed.filter(x => x !== id);
+      // their bid goes with them, so the lot reopens with no bid on it
+      if (a.highBidderId === id) { a.highBidderId = null; a.highBid = 0; a.bids = 0; }
+      if (!game.players.length) return endDraft(true);
+      refreshAuctionClock();
+    }
+    if (game.phase === 'voting') maybeCloseVoting();
+    broadcast();
+  });
+
+  // with 2 players and no judges a vote can't separate them, so the host calls it
+  socket.on('declareWinner', id => {
+    if (!isHost() || game.phase !== 'results' || game.endedEarly) return;
+    const r = game.results;
+    if (!r || r.voted || !playerById(id)) return;
+    game.results = { ...r, voted: true, decided: 'declared', winners: [id] };
+    saveGameRecord();
     broadcast();
   });
 

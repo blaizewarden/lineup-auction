@@ -110,7 +110,7 @@ function stats() {
   const people = {};
   const pairs = {};
   const person = name => people[key(name)] || (people[key(name)] = {
-    name, played: 0, voteGames: 0, wins: 0, votes: 0, spent: 0, left: 0, bids: 0,
+    name, played: 0, voteGames: 0, judged: 0, wins: 0, votes: 0, spent: 0, left: 0, bids: 0,
     streak: 0, bestStreak: 0, cats: {}, picks: {}, votesCast: 0, kingVotes: 0
   });
   for (const name of data.profiles) person(name);
@@ -137,8 +137,9 @@ function stats() {
         signings.push({ name: p.name, item: pick.item, price: pick.price, category: g.category });
       }
       if (g.voted) {
+        // voteGames = games with a winner; judged = games actually decided by a vote
         s.voteGames += 1;
-        s.votes += p.votes;
+        if (g.decided !== 'declared') { s.judged += 1; s.votes += p.votes; }
         const c = s.cats[g.category] || (s.cats[g.category] = { games: 0, wins: 0 });
         c.games += 1;
         if (p.won) { s.wins += 1; c.wins += 1; s.streak += 1; s.bestStreak = Math.max(s.bestStreak, s.streak); }
@@ -175,7 +176,7 @@ function stats() {
     return {
       name: s.name, played: s.played, voteGames: s.voteGames, wins: s.wins, votes: s.votes,
       winPct: s.voteGames ? Math.round((s.wins / s.voteGames) * 100) : null,
-      votesPerGame: s.voteGames ? round(s.votes / s.voteGames, 2) : null,
+      votesPerGame: s.judged ? round(s.votes / s.judged, 2) : null,
       avgSpent: s.played ? round(s.spent / s.played) : null,
       avgLeft: s.played ? round(s.left / s.played) : null,
       bidsPerGame: s.played ? round(s.bids / s.played) : null,
@@ -187,6 +188,7 @@ function stats() {
     };
   });
   const rated = all.filter(s => s.voteGames >= MIN_GAMES);
+  const judged = all.filter(s => s.judged >= MIN_GAMES);
   const regulars = all.filter(s => s.played >= MIN_GAMES);
   const top = (list, by, dir = -1, n = 5) => [...list].filter(s => s[by] != null)
     .sort((a, b) => dir * (a[by] - b[by]) || a.name.localeCompare(b.name)).slice(0, n);
@@ -197,8 +199,8 @@ function stats() {
     players: all.filter(s => s.played || findProfile(s.name)).sort((a, b) => b.played - a.played || a.name.localeCompare(b.name)),
     boards: {
       mostPlayed: top(all.filter(s => s.played), 'played'),
-      bestVotes: top(rated, 'votesPerGame'),
-      worstVotes: top(rated, 'votesPerGame', 1),
+      bestVotes: top(judged, 'votesPerGame'),
+      worstVotes: top(judged, 'votesPerGame', 1),
       bestWin: top(rated, 'winPct'),
       worstWin: top(rated, 'winPct', 1),
       bigSpender: top(regulars, 'avgSpent'),
