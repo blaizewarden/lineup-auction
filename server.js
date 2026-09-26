@@ -38,6 +38,7 @@ function loadCategories() {
         goal: data.goal || data.name,
         about: data.about || '',
         group: data.group || 'Other',
+        adult: !!data.adult,
         details: data.details || {},
         style: ['poster', 'team', 'list'].includes(data.style) ? data.style : 'list',
         items: [...new Set((data.items || []).map(s => String(s).trim()).filter(Boolean))]
@@ -170,8 +171,10 @@ function broadcast() {
 // ---------- flow ----------
 function startGame() {
   const s = game.settings;
+  // the random draw never lands on an adult category; the host has to choose it
+  const pool = CATEGORIES.filter(c => !c.adult);
   const cat = s.categoryId === 'random'
-    ? CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)]
+    ? pool[Math.floor(Math.random() * pool.length)]
     : CATEGORIES.find(c => c.id === s.categoryId);
   game.meta = { name: cat.name, goal: cat.goal, about: cat.about, style: cat.style };
   game.id = Date.now();
