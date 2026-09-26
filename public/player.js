@@ -191,7 +191,7 @@ function renderLobby(s) {
     </div>`);
   $('#switchBtn').onclick = () => emit('switchRole');
   $('#leaveBtn').onclick = () => { if (!confirm('Leave the game?')) return; emit('leave'); forget(); view = null; render(); };
-  $('#peopleBox').querySelectorAll('[data-kick]').forEach(b => { b.onclick = () => emit('kick', b.dataset.kick); });
+  $('#peopleBox').querySelectorAll('[data-kick]').forEach(b => { b.onclick = () => kickPlayer(b.dataset.kick); });
 
   setHTML($('#inviteBox'), `
     <h2>Get your mates in</h2>
@@ -323,9 +323,13 @@ function kickButton(p) {
   return `<button class="btn ghost wide small" style="margin-top:10px" onclick="kickPlayer('${p.id}')">Remove ${esc(p.name)}</button>`;
 }
 function kickPlayer(id) {
-  const p = App.state.players.find(x => x.id === id);
+  const s = App.state;
+  const p = [...s.players, ...s.judges].find(x => x.id === id);
   if (!p) return;
-  if (confirm(`Remove ${p.name} from this game? Their lineup and money go with them. It can't be undone.`)) emit('kick', id);
+  const msg = s.phase === 'lobby'
+    ? `Remove ${p.name} from the game?`
+    : `Remove ${p.name} from this game? Their lineup and money go with them. It can't be undone.`;
+  if (confirm(msg)) emit('kick', id);
 }
 
 function renderVoting(s) {
